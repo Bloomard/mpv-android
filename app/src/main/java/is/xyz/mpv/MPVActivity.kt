@@ -724,8 +724,8 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
         binding.topControls.animate().cancel()
 
         // reset controls alpha to be visible
-        binding.controls.alpha = 1f
-        binding.topControls.alpha = 1f
+        binding.controls.alpha = 0.6f
+        binding.topControls.alpha = 0.6f
 
         if (binding.controls.visibility != View.VISIBLE) {
             binding.controls.visibility = View.VISIBLE
