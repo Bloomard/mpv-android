@@ -158,6 +158,10 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
         }
     }
 
+    private val toggleControlsRunnable = Runnable {
+        toggleControls()
+    }
+
     private val stopServiceRunnable = Runnable {
         val intent = Intent(this, BackgroundPlaybackService::class.java)
         applicationContext.stopService(intent)
@@ -830,6 +834,10 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
             return super.dispatchTouchEvent(ev)
         }
 
+        if (ev.action == MotionEvent.ACTION_DOWN) {
+            fadeHandler.removeCallbacks(toggleControlsRunnable)
+            mightWantToToggleControls = true
+        }
         if (super.dispatchTouchEvent(ev)) {
             // reset delay if the event has been handled
             // ideally we'd want to know if the event was delivered to controls, but we can't
@@ -838,10 +846,11 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
             if (ev.action == MotionEvent.ACTION_UP)
                 return true
         }
-        if (ev.action == MotionEvent.ACTION_DOWN)
-            mightWantToToggleControls = true
         if (ev.action == MotionEvent.ACTION_UP && mightWantToToggleControls) {
-            toggleControls()
+            fadeHandler.postDelayed(
+                toggleControlsRunnable,
+                android.view.ViewConfiguration.getDoubleTapTimeout().toLong()
+            )
         }
         return true
     }
@@ -2118,6 +2127,8 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
 
             /* Tap gestures */
             PropertyChange.SeekFixed -> {
+                mightWantToToggleControls = false
+                fadeHandler.removeCallbacks(toggleControlsRunnable)
                 val seekTime = diff * 10f
                 val newPos = psc.positionSec + seekTime.toInt() // only for display
                 MPVLib.command(arrayOf("seek", seekTime.toString(), "relative"))
@@ -2126,11 +2137,19 @@ class MPVActivity : AppCompatActivity(), MPVLib.EventObserver, TouchGesturesObse
                 gestureTextView.text = getString(R.string.ui_seek_distance, Utils.prettyTime(newPos), diffText)
                 fadeGestureText()
             }
-            PropertyChange.PlayPause -> player.cyclePause()
+            PropertyChange.PlayPause -> {
+                mightWantToToggleControls = false
+                fadeHandler.removeCallbacks(toggleControlsRunnable)
+                player.cyclePause()
+            }
             PropertyChange.Custom -> {
+                mightWantToToggleControls = false
+                fadeHandler.removeCallbacks(toggleControlsRunnable)
                 val keycode = 0x10002 + diff.toInt()
                 MPVLib.command(arrayOf("keypress", "0x%x".format(keycode)))
             }
+
+
         }
     }
 
