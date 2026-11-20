@@ -37,13 +37,6 @@ jobs:
           CACHE_MODE: "folder"
           CACHE_FOLDER: "${{ github.workspace }}/gh-cache"
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: mpv-android-apk
-          path: app/build/outputs/apk/**/*.apk
-          if-no-files-found: error
-
       - name: Build
         run: |
           buildscripts/include/ci.sh build
